@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-card">
+                <h1>💰 Personal Finance Dashboard</h1>
+                <p class="login-subtitle">Please login to access your dashboard</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" class="form-input" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="Enter password" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    </div>
+                    <div class="login-footer">
+                        <p id="loginError" class="error-message" style="display: none;"></p>
+                        <p class="login-hint">First time? Use any username and password to create your account.</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (hidden until logged in) -->
+    <div class="app-container" id="appContainer" style="display: none;">
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>💰 Personal Finance Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="whatsappImportBtn">📱 Import from WhatsApp</button>
+                <button class="btn btn-primary" id="addExpenseBtn">+ Add Expense</button>
+                <button class="btn btn-secondary" id="logoutBtn">🚪 Logout</button>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h3>Total Expenses</h3>
+                        <p class="stat-value" id="totalExpenses">₹0.00</p>
+                        <span class="stat-period" id="totalPeriod">This Month</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-content">
+                        <h3>Remaining Budget</h3>
+                        <p class="stat-value" id="remainingBudget">₹0.00</p>
+                        <span class="stat-period">Available</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <h3>Average Daily</h3>
+                        <p class="stat-value" id="averageDaily">₹0.00</p>
+                        <span class="stat-period">Per Day</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-content">
+                        <h3>Categories</h3>
+                        <p class="stat-value" id="activeCategories">0</p>
+                        <span class="stat-period">Active</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <div class="filters-card">
+                <h2>Filters</h2>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="categoryFilter">Category</label>
+                        <select id="categoryFilter" class="filter-input">
+                            <option value="all">All Categories</option>
+                            <option value="Food">Food</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Bills">Bills</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Education">Education</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="searchInput">Search</label>
+                        <input type="text" id="searchInput" class="filter-input" placeholder="Search expenses...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="sortBy">Sort By</label>
+                        <select id="sortBy" class="filter-input">
+                            <option value="date">Date (Newest)</option>
+                            <option value="date-oldest">Date (Oldest)</option>
+                            <option value="amount-high">Amount (High to Low)</option>
+                            <option value="amount-low">Amount (Low to High)</option>
+                            <option value="category">Category</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary" id="clearFiltersBtn">Clear Filters</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Category Breakdown</h2>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Monthly Comparison</h2>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Yearly Overview</h2>
+                    <div class="chart-container">
+                        <canvas id="yearlyChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h2>Spending Trends</h2>
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Budget Progress Section -->
+        <section class="budget-section">
+            <div class="budget-header">
+                <h2>Budget Progress</h2>
+                <button class="btn btn-primary" id="setBudgetBtn">Set Budget</button>
+            </div>
+            <div class="budget-progress-container" id="budgetProgressContainer">
+                <!-- Budget progress bars will be inserted here -->
+            </div>
+        </section>
+
+        <!-- Expenses List Section -->
+        <section class="expenses-section">
+            <div class="expenses-header">
+                <h2>Expenses</h2>
+                <div class="expenses-header-right">
+                    <div class="expenses-count" id="expensesCount">0 expenses</div>
+                    <div class="download-buttons">
+                        <button class="btn btn-secondary" id="downloadXlsxBtn" title="Download as Excel">
+                            📊 Download Excel
+                        </button>
+                        <button class="btn btn-secondary" id="downloadPdfBtn" title="Download as PDF">
+                            📄 Download PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="expenses-list" id="expensesList">
+                <!-- Expense items will be inserted here -->
+            </div>
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📝</div>
+                <h3>No expenses found</h3>
+                <p>Add your first expense to get started!</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Add/Edit Expense Modal -->
+    <div class="modal" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Expense</h2>
+                <button class="modal-close" id="closeExpenseModal">&times;</button>
+            </div>
+            <form id="expenseForm">
+                <input type="hidden" id="expenseId">
+                <div class="form-group">
+                    <label for="expenseAmount">Amount *</label>
+                    <input type="number" id="expenseAmount" class="form-input" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseCategory">Category *</label>
+                    <select id="expenseCategory" class="form-input" required>
+                        <option value="">Select category</option>
+                        <option value="Food">Food</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDate">Date *</label>
+                    <input type="date" id="expenseDate" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="expenseDescription">Description</label>
+                    <textarea id="expenseDescription" class="form-input" rows="3" placeholder="Add a description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="expenseTags">Tags (comma-separated)</label>
+                    <input type="text" id="expenseTags" class="form-input" placeholder="e.g., grocery, essential, work">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelExpenseBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- WhatsApp Import Modal -->
+    <div class="modal" id="whatsappImportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Import Expense from WhatsApp</h2>
+                <button class="modal-close" id="closeWhatsAppModal">&times;</button>
+            </div>
+            <div class="whatsapp-info">
+                <p><strong>Send expense updates to:</strong></p>
+                <div class="whatsapp-number">
+                    <a href="https://wa.me/919886434945" target="_blank" class="whatsapp-link">
+                        📱 +91-9886434945
+                    </a>
+                </div>
+                <p class="info-text">Format your message like this:</p>
+                <div class="format-example">
+                    <code>
+                        Expense: 500<br>
+                        Category: Food<br>
+                        Date: 2024-01-15<br>
+                        Description: Groceries
+                    </code>
+                </div>
+            </div>
+            <form id="whatsappImportForm">
+                <div class="form-group">
+                    <label for="whatsappMessage">Paste WhatsApp Message Here</label>
+                    <textarea id="whatsappMessage" class="form-input" rows="8" placeholder="Paste your WhatsApp message here..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelWhatsAppBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Import Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Set Budget Modal -->
+    <div class="modal" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Set Budget</h2>
+                <button class="modal-close" id="closeBudgetModal">&times;</button>
+            </div>
+            <form id="budgetForm">
+                <div class="form-group">
+                    <label for="budgetCategory">Category *</label>
+                    <select id="budgetCategory" class="form-input" required>
+                        <option value="">Select category</option>
+                        <option value="Food">Food</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="budgetLimit">Budget Limit *</label>
+                    <input type="number" id="budgetLimit" class="form-input" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="budgetPeriod">Period *</label>
+                    <select id="budgetPeriod" class="form-input" required>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBudgetBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Set Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
